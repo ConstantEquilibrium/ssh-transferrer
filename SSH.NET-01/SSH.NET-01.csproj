@@ -4,6 +4,7 @@
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <RootNamespace>SSH.NET_01</RootNamespace>
+    <UserSecretsId>6560aa4a-8d5e-4164-b7fc-8845702c206e</UserSecretsId>
   </PropertyGroup>
 
 
