@@ -18,10 +18,24 @@ namespace SSH.NET_01.Controllers
 {
     public class HomeController : Controller
     {
+        private KodiContext _context;
+        public IConfiguration Configuration { get; }
 
-        public async Task<IActionResult> GetMovies()
+        public HomeController(IConfiguration configuration, KodiContext context)
         {
-            var remote = new { username = "robert", password = "<PASSWORD>", address = "<ADDRESS>" }; // UPDATE INFO
+            Configuration = configuration;
+            _context = context;
+        }
+
+        public async Task<List<MovieModel>> GetMovies()
+        {
+            var dbList = _context.Movie.ToList();
+            foreach (var item in dbList)
+            {
+                item.C00 = Regex.Replace(item.C00, "[^0-9a-zA-Z ]+", "");
+            }
+
+            var remote = new { username = "robert", password = "pianomusik123", address = "tiger.seedhost.eu" }; // UPDATE INFO
 
             var movies = new List<MovieModel>();
             var remoteConn = new ConnectionInfo(remote.address, remote.username, new PasswordAuthenticationMethod(remote.username, remote.password));
@@ -35,22 +49,42 @@ namespace SSH.NET_01.Controllers
                 {
                     if (item.Name != ".." && item.Name != ".")
                     {
+                        var cleanName = Regex.Replace(item.Name, "[^0-9a-zA-Z ]+", "");
+
+                        var title = cleanName.Substring(0, cleanName.Length - 5);
+                        var year = cleanName.Substring(cleanName.Length - 4);
+
+                        var Data = dbList.SingleOrDefault(x => x.C00.ToLower().Equals(title.ToLower()) && x.Premiered.Substring(0, 4).Equals(year));
+
+                        if (Data == null)
+                        {
+                            Data = new Movie();
+                        } else
+                        {
+                            var thumbList = Data.C08.Split("aspect=\"poster\" preview=\"");
+                            var thumb = thumbList[1].Substring(0, 62);
+                            Data.C08 = thumb;
+                        }
+
                         movies.Add(new MovieModel
                         {
                             File = item,
-                            MovieData = await Fetch(item.Name)
+                            MovieData = Data
                         });
                     }
                 }
             }
 
-            return null;
+            return movies;
         }
 
-        public async Task<IActionResult> Download()
+        public async Task<IActionResult> Download(string name)
         {
-            var remote = new { username = "robert", password = "<PASSWORD>", address = "<ADDRESS>" }; // UPDATE INFO
-            var local = new { username = "robert", password = "<PASSWORD>", address = "<ADDRESS>" };
+            var remoteConf = Configuration.GetSection("Remote");
+            var localConf = Configuration.GetSection("Local");
+
+            var remote = new { username = remoteConf.GetSection("username").Value, password = remoteConf.GetSection("password").Value, address = remoteConf.GetSection("address").Value }; // UPDATE INFO
+            var local = new { username = localConf.GetSection("username").Value, password = localConf.GetSection("password").Value, address = localConf.GetSection("address").Value };
 
             var destination = "/media/movies";
             var source = "downloads/movies/";
@@ -73,15 +107,17 @@ namespace SSH.NET_01.Controllers
 
                     foreach (var item in dir)
                     {
-
-                        var test = Fetch(item.Name);
+                        if (item.Name.ToLower().Equals(name.ToLower()))
+                        {
+                            tasks.Add(DownloadFileAsync(client, item.FullName, destination + "\\" + item.Name));
+                        }
                         //if (item.Name.Contains("S01E01"))
                         //{
                         //    tasks.Add(DownloadFileAsync(client, item.FullName, destination + "\\" + item.Name));
                         //}
                     }
 
-                    //await Task.WhenAll(tasks);
+                    await Task.WhenAll(tasks);
                     client.Disconnect();
                 }
 
@@ -137,7 +173,7 @@ namespace SSH.NET_01.Controllers
         {   
             return View();
         }
-
+            
         public IActionResult Privacy()
         {
             return View();
@@ -147,6 +183,13 @@ namespace SSH.NET_01.Controllers
         public IActionResult Error()
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+
+        public async Task<IActionResult> MovieList()
+        {
+            List<MovieModel> movies = await GetMovies();
+
+            return View(movies);
         }
     }
 }

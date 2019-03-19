@@ -7,8 +7,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SSH.NET_01.Models;
 
 namespace SSH.NET_01
 {
@@ -24,6 +26,9 @@ namespace SSH.NET_01
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            var conn = Configuration.GetConnectionString("conn");
+            services.AddDbContext<KodiContext>(options => options.UseMySql(conn, mySqlOptions => { mySqlOptions.ServerVersion(new Version(5, 7, 25), Pomelo.EntityFrameworkCore.MySql.Infrastructure.ServerType.MySql); }));
+
             services.Configure<CookiePolicyOptions>(options =>
             {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.
@@ -57,7 +62,7 @@ namespace SSH.NET_01
             {
                 routes.MapRoute(
                     name: "default",
-                    template: "{controller=Home}/{action=Index}/{id?}");
+                    template: "{controller=Home}/{action=MovieList}");
             });
         }
     }

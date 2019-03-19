@@ -1,0 +1,26 @@
+﻿@model List<SSH.NET_01.Models.MovieModel>
+@{
+    ViewData["Title"] = "MovieList";
+}
+
+<h1>MovieList</h1>
+
+<div class="container">
+    @foreach (var movie in Model)
+    {
+        <div class="movie-container">
+            @if (movie.MovieData.C08 == null)
+            {
+                <img src="~/img/noposter.png" />
+            } else
+            {
+                <img src="@movie.MovieData.C08" />
+            }
+
+            <h3>@movie.File.Name</h3>
+            <a asp-action="Download" asp-route-name="@movie.File.Name">Download</a>
+        </div>
+
+
+    }
+</div>

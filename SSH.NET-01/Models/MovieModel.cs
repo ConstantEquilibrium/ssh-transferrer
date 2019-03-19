@@ -6,9 +6,14 @@ using System.Threading.Tasks;
 
 namespace SSH.NET_01.Models
 {
+    public class MovieList
+    {
+        public List<MovieModel> Movies { get; set; }
+    }
+
     public class MovieModel
     {
         public SftpFile File { get; set; }
-        public Result MovieData { get; set; }
+        public Movie MovieData { get; set; }
     }
 }
