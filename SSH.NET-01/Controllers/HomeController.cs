@@ -56,11 +56,22 @@ namespace SSH.NET_01.Controllers
                         var title = cleanName.Substring(0, cleanName.Length - 5);
                         var year = cleanName.Substring(cleanName.Length - 4);
 
-                        var Data = dbList.SingleOrDefault(x => x.C00.ToLower().Equals(title.ToLower()) && x.Premiered.Substring(0, 4).Equals(year));
+                        var Data = dbList.First(x => x.C00.ToLower().Equals(title.ToLower()) && x.Premiered.Substring(0, 4).Equals(year));
 
                         if (Data == null)
                         {
-                            Data = new Movie();
+                            var movieData = await Fetch(title);
+                            Data = new Movie
+                            {
+                                C00 = movieData.title,
+                                C08 = movieData.poster_path,
+                            };
+                            
+
+                        } else if(Data.C08 == "" || Data.C08 == null)
+                        {
+                            var movieData = await Fetch(item.Name);
+                            Data.C08 = "https://image.tmdb.org/t/p/w500/" + movieData.poster_path;
                         } else
                         {
                             var thumbList = Data.C08.Split("aspect=\"poster\" preview=\"");
@@ -140,7 +151,7 @@ namespace SSH.NET_01.Controllers
 
         public async Task<Result> Fetch(string searchValue)
         {
-            var api_key = Configuration.GetSection("TVDB").GetSection("api_key").Value;
+            var api_key = Configuration.GetSection("Tvdb").GetSection("apikey").Value;
 
             var fullSearch = Regex.Replace(searchValue, "[^0-9a-zA-Z ]+", "");
 
@@ -164,6 +175,7 @@ namespace SSH.NET_01.Controllers
                     if (res_title.ToLower().Equals(title.ToLower()) && res.release_date.Substring(0,4).Equals(year))
                     {
                         movie = res;
+                        return movie;
                     }
                 }
 
