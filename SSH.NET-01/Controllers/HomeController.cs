@@ -35,7 +35,9 @@ namespace SSH.NET_01.Controllers
                 item.C00 = Regex.Replace(item.C00, "[^0-9a-zA-Z ]+", "");
             }
 
-            var remote = new { username = "robert", password = "pianomusik123", address = "tiger.seedhost.eu" }; // UPDATE INFO
+            var remoteConf = Configuration.GetSection("Remote");
+
+            var remote = new { username = remoteConf.GetSection("username").Value, password = remoteConf.GetSection("password").Value, address = remoteConf.GetSection("address").Value };
 
             var movies = new List<MovieModel>();
             var remoteConn = new ConnectionInfo(remote.address, remote.username, new PasswordAuthenticationMethod(remote.username, remote.password));
@@ -138,6 +140,8 @@ namespace SSH.NET_01.Controllers
 
         public async Task<Result> Fetch(string searchValue)
         {
+            var api_key = Configuration.GetSection("TVDB").GetSection("api_key").Value;
+
             var fullSearch = Regex.Replace(searchValue, "[^0-9a-zA-Z ]+", "");
 
             var title = fullSearch.Substring(0, fullSearch.Length - 5);
@@ -146,7 +150,7 @@ namespace SSH.NET_01.Controllers
             using (var client = new HttpClient())
             {
 
-                var response = await client.GetAsync($"https://api.themoviedb.org/3/search/movie?api_key=ff74666fe6c2adc1afc0cc931a96b258&query=" + title);
+                var response = await client.GetAsync($"https://api.themoviedb.org/3/search/movie?api_key=" + api_key + "&query=" + title);
                 response.EnsureSuccessStatusCode();
 
                 var result = await response.Content.ReadAsStringAsync();
